@@ -11,11 +11,11 @@ no_path() { [ ! -e "$1" ]; }
 no_proc() { ! pgrep -f "$1" >/dev/null 2>&1; }
 no_listener() { ! ss -ltn 2>/dev/null | grep -qE ":$1\\b"; }
 
-check "user clipstr is gone" no_user clipstr
+check "user clippy is gone" no_user clippy
 check "user deploy is gone" no_user deploy
 check "user intern is gone" no_user intern
 check "group devs is gone" no_group devs
-check "/srv/clipstr is gone" no_path /srv/clipstr
+check "/srv/clippy is gone" no_path /srv/clippy
 
 echo
 if [ "$failn" -eq 0 ]; then echo "TEARDOWN VERIFIED ($pass/$pass)"; else echo "NOT CLEAN: $failn leftover(s). Finish the tear down steps and run this again."; fi
