@@ -1,6 +1,4 @@
-# Linux Permissions: The Leaky Server
-
-A security scan flagged the staging server. Find what is wrong with its permissions, fix it, and prove it.
+<p align="center"><img src="assets/banner.svg" alt="Linux Permissions: The Leaky Server" width="100%"></p>
 
 | | |
 |-|-|
@@ -17,9 +15,10 @@ A security scan flagged the staging server. Find what is wrong with its permissi
 5. Commit and push. Open the **Actions** tab of your fork (click *I understand my workflows, go ahead and enable them* the first time). The **Lab check** shows what is still missing.
 6. When the check is green, **submit the URL of your fork** in the course platform.
 
+> [!NOTE]
 > The check only looks at your answers and any files the lab asks you to commit. Your instructor reads your work and may ask you to explain any line.
 
----
+<p align="center"><img src="assets/divider.svg" alt="" width="100%"></p>
 
 ## The situation
 
@@ -29,6 +28,7 @@ It is Friday, 17:40. The nightly security scan of Clipstr's **staging server** c
 
 At the same time, the 17:52 deploy failed with `Permission denied` and the developer on call is one tired click away from typing `chmod -R 777`. You are the DevOps engineer on duty. The investors' security consultant reads the scan on Monday.
 
+> [!IMPORTANT]
 > **Your mission**
 > - Investigate the server like an auditor: find **every** permission problem, without changing anything yet
 > - Fix them with least privilege, as a **script** you can run again (`fix.sh`)
@@ -39,7 +39,7 @@ At the same time, the 17:52 deploy failed with `Permission denied` and the devel
 
 > This lab creates three users and a folder at `/srv/clipstr` on your Ubuntu environment. `sudo ./teardown.sh` removes them whenever you want. Do not run it on a shared or production machine.
 
----
+<p align="center"><img src="assets/divider.svg" alt="" width="100%"></p>
 
 ## Part 1: Recon (look, do not touch)
 
@@ -51,6 +51,7 @@ sudo ./setup.sh
 
 You now have a staging server at `/srv/clipstr` with three users: `clipstr` (the app's service account), `deploy` (a developer, member of the group `devs`) and `intern` (not in `devs`).
 
+> [!NOTE]
 > **Predict** Before running any command, write down your guesses (you will answer about them in your submission):
 > 1. Can `intern` read `/srv/clipstr/config/app.env`?
 > 2. Can `deploy` run `/srv/clipstr/scripts/deploy.sh`?
@@ -80,9 +81,10 @@ namei -l /srv/clipstr/app/releases/v1/main.py
 
 Look closely at the output of `namei`. Which directory is the culprit, and what exactly is missing? (Remember what the `x` bit means on a **directory**.)
 
+> [!NOTE]
 > **Think** Make a table of at least **six** distinct problems: path, what is wrong, what could go wrong because of it. You will need it for the submission.
 
----
+<p align="center"><img src="assets/divider.svg" alt="" width="100%"></p>
 
 ## Part 2: Build the fix
 
@@ -101,13 +103,15 @@ Target end state. You decide the exact commands (`chown`, `chmod`, `chgrp`); the
 
 Write your commands into a file called **`fix.sh`** in this repository (start with `#!/usr/bin/env bash` and `set -euo pipefail`). Run it with `sudo ./fix.sh`.
 
+> [!NOTE]
 > **Think** (while you work on `logs/`)
 > - What does the **SGID bit** on a directory do (`chmod g+s` or the leading `2` in `2775`)?
 > - Test it: create a file in `logs/` as `clipstr` **before** you set SGID, then **after**, and compare the group with `ls -l`. Use `sudo -u clipstr touch /srv/clipstr/logs/test1`.
 
+> [!TIP]
 > **Stuck?** `ls -l` shows owner and group, `stat -c '%U:%G %a' <path>` prints it in one line. A mode like `2775` has four digits: the first one holds setuid (4), setgid (2) and sticky (1).
 
----
+<p align="center"><img src="assets/divider.svg" alt="" width="100%"></p>
 
 ## Part 3: Prove it
 
@@ -129,7 +133,7 @@ sudo -u clipstr cat /srv/clipstr/config/app.env     # the app must still work
 
 Run `sudo ./fix.sh` **a second time**. Does anything change or break? A fix script that cannot be run twice is not a fix script.
 
----
+<p align="center"><img src="assets/divider.svg" alt="" width="100%"></p>
 
 ## Part 4: Break it, the Friday 17:55 quick fix
 
@@ -140,6 +144,7 @@ sudo ./panic.sh        # this runs: chmod -R 777 /srv/clipstr
 sudo ./verify.sh
 ```
 
+> [!NOTE]
 > **Predict** How many checks do you think will fail? Which ones? Write the number down **before** you run `verify.sh`.
 
 Look at the result. Compare it with your guess. Then answer: the deploy works again, so what exactly got worse?
@@ -153,14 +158,14 @@ sudo ./verify.sh
 
 If a check still fails after `fix.sh`, your script does not cover everything that `chmod -R 777` touched. Improve `fix.sh` until it restores a clean state from *any* starting point.
 
----
+<p align="center"><img src="assets/divider.svg" alt="" width="100%"></p>
 
 ## Part 5: Investigate, two more detective questions
 
 1. `find /srv/clipstr -perm -4000` found a file that is "setuid root". Search for what that means. Why is a setuid file owned by root particularly dangerous? (In the lab it is a harmless copy of `/usr/bin/true`; on a real server it might not be.)
 2. `umask` decides the default permissions of **new** files. Run `umask`, then `sudo -u clipstr bash -c 'umask; touch /srv/clipstr/logs/t2; ls -l /srv/clipstr/logs/t2'`. Why does a file created by the app not get the group-write bit by default, and what are two ways to change that?
 
----
+<p align="center"><img src="assets/divider.svg" alt="" width="100%"></p>
 
 ## Level up (optional)
 
