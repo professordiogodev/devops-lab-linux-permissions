@@ -2,11 +2,19 @@
 
 ## The situation
 
-It is Friday, 17:40. The nightly security scan of Clippy's **staging server** came back with one line in red:
+```text
+PRACTICAL INTERVIEW - Platform engineer, Clippy
+Panel   : Rui (staff engineer), Aisha (security lead)
+Format  : you work on a real, disposable server. The panel watches what you type, not what you say.
+Rounds  : 1 Investigate   2 Fix   3 Defend   4 The quick fix   5 Two detective questions
+Pass    : the verifier is green and you can explain every command
+```
+
+Aisha slides a printout across the table. It is the nightly scan of Clippy's **staging server**, with one line in red:
 
 > `HIGH: unprivileged user 'intern' can read database credentials on clippy-staging`
 
-At the same time, the 17:52 deploy failed with `Permission denied` and the developer on call is one tired click away from typing `chmod -R 777`. You are the DevOps engineer on duty. The investors' security consultant reads the scan on Monday.
+Rui adds, calmly: *"And the deploy of 17:52 failed with `Permission denied`. The developer on call is one tired click away from typing `chmod -R 777`. You have an hour. Think out loud, and do not touch anything until you know what is wrong."*
 
 > **Your mission**
 > - Investigate the server like an auditor: find **every** permission problem, without changing anything yet
@@ -20,9 +28,9 @@ At the same time, the 17:52 deploy failed with `Permission denied` and the devel
 
 ---
 
-## Part 1: Recon (look, do not touch)
+## Round 1: Investigate (look, do not touch)
 
-Build the crime scene:
+Build the exercise server:
 
 ```bash
 sudo ./setup.sh
@@ -30,7 +38,7 @@ sudo ./setup.sh
 
 You now have a staging server at `/srv/clippy` with three users: `clippy` (the app's service account), `deploy` (a developer, member of the group `devs`) and `intern` (not in `devs`).
 
-> **Predict** Before running any command, write down your guesses (you will answer about them in your submission):
+> **Predict** Rui asks for your guesses before you run any command. Write them down (you will answer about them in your submission):
 > 1. Can `intern` read `/srv/clippy/config/app.env`?
 > 2. Can `deploy` run `/srv/clippy/scripts/deploy.sh`?
 > 3. Which files in the tree can **anyone** on the machine modify?
@@ -63,7 +71,7 @@ Look closely at the output of `namei`. Which directory is the culprit, and what 
 
 ---
 
-## Part 2: Build the fix
+## Round 2: Fix it, as a script
 
 Target end state. You decide the exact commands (`chown`, `chmod`, `chgrp`); the table says what must be true:
 
@@ -88,7 +96,7 @@ Write your commands into a file called **`fix.sh`** in this repository (start wi
 
 ---
 
-## Part 3: Prove it
+## Round 3: Defend it, prove it
 
 Two kinds of proof: an automatic one and your own attack.
 
@@ -110,7 +118,7 @@ Run `sudo ./fix.sh` **a second time**. Does anything change or break? A fix scri
 
 ---
 
-## Part 4: Break it, the Friday 17:55 quick fix
+## Round 4: The quick fix everyone suggests
 
 The developer on call is tired. They run the "fix" that every forum thread suggests:
 
@@ -134,7 +142,7 @@ If a check still fails after `fix.sh`, your script does not cover everything tha
 
 ---
 
-## Part 5: Investigate, two more detective questions
+## Round 5: Two last questions from the panel
 
 1. `find /srv/clippy -perm -4000` found a file that is "setuid root". Search for what that means. Why is a setuid file owned by root particularly dangerous? (In the lab it is a harmless copy of `/usr/bin/true`; on a real server it might not be.)
 2. `umask` decides the default permissions of **new** files. Run `umask`, then `sudo -u clippy bash -c 'umask; touch /srv/clippy/logs/t2; ls -l /srv/clippy/logs/t2'`. Why does a file created by the app not get the group-write bit by default, and what are two ways to change that?
